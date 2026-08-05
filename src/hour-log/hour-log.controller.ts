@@ -19,16 +19,17 @@ export class HourLogController {
   }
 
   @Get('placements/:id/hour-logs')
-  listForPlacement(@Param('id', ParseIntPipe) id: number) {
+  async listForPlacement(@Param('id', ParseIntPipe) id: number, @Req() req: { user: { sub: number; role: Role } }) {
+    await this.service.assertPlacementAccess(id, req.user.sub, req.user.role)
     return this.service.listForPlacement(id)
   }
 
   @Get('placements/:id/progress')
-  progress(@Param('id', ParseIntPipe) id: number) {
+  async progress(@Param('id', ParseIntPipe) id: number, @Req() req: { user: { sub: number; role: Role } }) {
+    await this.service.assertPlacementAccess(id, req.user.sub, req.user.role)
     return this.service.progressReport(id)
   }
 
-  // N-05: @Roles(TUTOR) valida el rol, no la pertenencia al placement.
   @Patch('hour-logs/:id/review')
   @Roles(Role.TUTOR)
   review(

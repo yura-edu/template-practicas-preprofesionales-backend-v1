@@ -4,6 +4,7 @@ import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
 import { AccreditationService } from './accreditation.service'
+import { AccreditationQueryDto } from './dto/accreditation-query.dto'
 import { CreatePlacementDto } from './dto/create-placement.dto'
 import { UploadDocumentDto } from './dto/upload-document.dto'
 import { PlacementService } from './placement.service'
@@ -20,8 +21,8 @@ export class PlacementController {
   // ParseIntPipe intenta convertir "accreditation" a número y devuelve 400.
   @Get('accreditation')
   @Roles(Role.COORDINATOR)
-  accreditation(@Query('period') period: string) {
-    return this.accreditationService.reportForPeriod(period)
+  accreditation(@Query() query: AccreditationQueryDto) {
+    return this.accreditationService.reportForPeriod(query.period)
   }
 
   @Post()
@@ -47,8 +48,8 @@ export class PlacementController {
   addDocument(
     @Param('id', ParseIntPipe) id: number,
     @Body() dto: UploadDocumentDto,
-    @Req() req: { user: { sub: number } },
+    @Req() req: { user: { sub: number; role: Role } },
   ) {
-    return this.service.addDocument(id, dto, req.user.sub)
+    return this.service.addDocument(id, dto, req.user.sub, req.user.role)
   }
 }

@@ -13,12 +13,12 @@ export class EvaluationController {
 
   @Post('evaluations')
   @Roles(Role.TUTOR, Role.COMPANY, Role.STUDENT)
-  submit(@Body() dto: CreateEvaluationDto, @Req() req: { user: { sub: number } }) {
-    return this.service.submit(dto, req.user.sub)
+  submit(@Body() dto: CreateEvaluationDto, @Req() req: { user: { sub: number; role: Role } }) {
+    return this.service.submit(dto, req.user.sub, req.user.role)
   }
 
   @Get('placements/:id/evaluations')
-  listForPlacement(@Param('id', ParseIntPipe) id: number) {
-    return this.service.listForPlacement(id)
+  listForPlacement(@Param('id', ParseIntPipe) id: number, @Req() req: { user: { sub: number; role: Role } }) {
+    return this.service.listForPlacement(id, req.user.sub, req.user.role)
   }
 }

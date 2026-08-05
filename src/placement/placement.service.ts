@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { DocumentKind, DocumentStatus, PlacementStatus } from '@prisma/client'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { DocumentKind, DocumentStatus, PlacementStatus, Role } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { UploadDocumentDto } from './dto/upload-document.dto'
 
@@ -74,7 +74,13 @@ export class PlacementService {
     })
   }
 
-  addDocument(placementId: number, dto: UploadDocumentDto, uploadedById: number) {
+  async addDocument(placementId: number, dto: UploadDocumentDto, uploadedById: number, role: Role) {
+    const placement = await this.prisma.placement.findUnique({ where: { id: placementId } })
+    if (!placement) throw new NotFoundException('placement no encontrado')
+    if (role !== Role.COORDINATOR && placement.studentId !== uploadedById) {
+      throw new ForbiddenException('el placement no es tuyo')
+    }
+
     return this.prisma.document.create({
       data: { ...dto, placementId, uploadedById, status: DocumentStatus.PENDING },
     })

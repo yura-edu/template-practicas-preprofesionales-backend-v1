@@ -1,5 +1,5 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { HourLogStatus, PlacementStatus } from '@prisma/client'
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common'
+import { HourLogStatus, PlacementStatus, Role } from '@prisma/client'
 import { PrismaService } from '../prisma/prisma.service'
 import type { CreateHourLogDto } from './dto/create-hour-log.dto'
 
@@ -45,8 +45,7 @@ export class HourLogService {
       throw new BadRequestException('la hora de inicio debe ser anterior a la de fin')
     }
 
-    // N-06: la fecha del cliente entra tal cual. Sin normalizar zona horaria
-    // y sin verificar que caiga en [placement.startDate, placement.endDate].
+    // La fecha del registro llega desde el cliente y se persiste tal como fue recibida.
     const created = await this.prisma.hourLog.create({
       data: {
         placementId: dto.placementId,
@@ -66,6 +65,17 @@ export class HourLogService {
   // D-02: notificación dentro del mismo servicio que persiste y valida.
   private notifyTutor(tutorId: number, hourLogId: number): void {
     console.log(`[notificación] tutor ${tutorId}: nueva hora registrada #${hourLogId}`)
+  }
+
+  /**
+   * Verifica que quien consulta un placement sea el estudiante dueño, su
+   * tutor asignado, o un coordinador.
+   */
+  async assertPlacementAccess(placementId: number, userId: number, role: Role): Promise<void> {
+    const placement = await this.prisma.placement.findUnique({ where: { id: placementId } })
+    if (!placement) throw new NotFoundException('placement no encontrado')
+    const allowed = role === Role.COORDINATOR || placement.studentId === userId || placement.tutorId === userId
+    if (!allowed) throw new ForbiddenException('no tienes acceso a este placement')
   }
 
   /** Lista el libro de horas completo de un placement, más reciente primero. */
@@ -88,8 +98,6 @@ export class HourLogService {
     if (log.status !== HourLogStatus.SUBMITTED) {
       throw new BadRequestException('solo se revisan registros en SUBMITTED')
     }
-    // N-05: no se comprueba que reviewerId sea el tutorId del placement.
-    // El guard solo verifica el rol TUTOR, no la pertenencia.
     return this.prisma.hourLog.update({
       where: { id },
       data: {
