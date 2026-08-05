@@ -79,8 +79,9 @@ Reglas de negocio que el dominio sostiene:
 - Las postulaciones aceptadas de una oferta no superan sus `seats`.
 - Un estudiante tiene como máximo un `Placement` en `ACTIVE`.
 - Un `Placement` solo pasa a `ACTIVE` con convenio y seguro validados.
-- Un `Placement` solo pasa a `COMPLETED` cuando las horas aprobadas alcanzan
-  `requiredHours`.
+- Un `Placement` debería pasar a `COMPLETED` cuando las horas aprobadas alcancen
+  `requiredHours` — esa transición es la regla de negocio prevista, pero todavía no hay
+  código que la implemente.
 - Solo el tutor asignado aprueba las horas de su placement.
 
 ### Sincronización offline
@@ -88,8 +89,57 @@ Reglas de negocio que el dominio sostiene:
 El cliente mantiene una copia local en IndexedDB y reconcilia contra dos endpoints:
 
 - `GET /api/sync/pull?since=<cursor>&limit=200` — devuelve los cambios posteriores al
-  checkpoint. Los borrados viajan como tombstones (`deletedAt != null`).
+  checkpoint. Los borrados viajan como tombstones (`deletedAt != null`). `limit` se acota
+  a 500 en el servidor.
 - `POST /api/sync/push` — recibe operaciones del outbox, cada una con su `clientOpId`.
+
+**Respuesta de `pull`:**
+
+```json
+{
+  "changes": {
+    "placements": [{ "id": 1, "studentId": 5, "tutorId": 7, "status": "ACTIVE", "updatedAt": "2026-04-01T12:00:00.000Z" }],
+    "hourLogs": [{ "id": 99, "placementId": 1, "status": "SUBMITTED", "updatedAt": "2026-04-01T12:00:00.000Z" }],
+    "documents": [],
+    "evaluations": []
+  },
+  "checkpoint": "eyJ1cGRhdGVkQXQiOiIyMDI2LTA0LTAxVDEyOjAwOjAwLjAwMFoiLCJpZCI6OTl9",
+  "hasMore": false
+}
+```
+
+`checkpoint` es opaco (base64 de `{ updatedAt, id }`); el cliente solo lo reenvía tal cual
+en el siguiente `since`.
+
+**Body de `push`:**
+
+```json
+{
+  "ops": [
+    {
+      "clientOpId": "11111111-1111-4111-8111-111111111111",
+      "entity": "hourLog",
+      "op": "create",
+      "baseVersion": null,
+      "payload": { "placementId": 1, "date": "2026-04-02", "startTime": "08:00", "endTime": "12:00", "hours": 4, "activity": "Soporte" }
+    }
+  ]
+}
+```
+
+**Respuesta de `push`:**
+
+```json
+{
+  "results": [
+    { "clientOpId": "11111111-1111-4111-8111-111111111111", "status": "applied", "server": { "id": 77 }, "reason": null }
+  ]
+}
+```
+
+`status` puede ser `applied`, `conflict` o `rejected`. `entity` acepta cuatro valores en el
+DTO (`hourLog`, `placement`, `document`, `evaluation`), pero **hoy solo `hourLog` se aplica**:
+cualquier otra entidad vuelve con `status: 'rejected'`.
 
 **Resolución de conflictos:** el servidor es la autoridad sobre el estado. Si un `HourLog`
 ya pasó a `APPROVED` o `REJECTED`, la edición offline del estudiante se rechaza y se le
@@ -102,7 +152,8 @@ Si es tu primer día en este proyecto:
 1. Levanta el stack y confirma que `GET /api/offers` responde con las ofertas del seed.
 2. **Lee `KNOWN_ISSUES.md` completo.** El equipo anterior dejó problemas conocidos
    documentados ahí. No todos están documentados.
-3. Lee `BACKLOG.md`: las épicas están ordenadas y cada una indica qué deuda toca pagar antes.
+3. Todavía no hay un backlog público de épicas: prioriza según lo que bloquee tu propio
+   trabajo, empezando por la deuda listada en `KNOWN_ISSUES.md`.
 4. Empieza por el Sprint 0: reproduce tres de los issues conocidos y escribe tests de
    caracterización que capturen el comportamiento actual antes de cambiar nada.
 5. Toda contribución entra por Pull Request **contra `develop`**, nunca contra `main`, y
