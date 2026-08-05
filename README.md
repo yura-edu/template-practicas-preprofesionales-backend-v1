@@ -25,6 +25,15 @@ pnpm dev
 
 La API queda en `http://localhost:3000/api`.
 
+## Variables de entorno
+
+| Variable | Valor por defecto | Descripción |
+|---|---|---|
+| `DATABASE_URL` | (requerido) | Cadena de conexión PostgreSQL |
+| `JWT_SECRET` | (requerido) | Secreto para firmar JWTs |
+| `PORT` | `3000` | Puerto donde escucha la API |
+| `CORS_ORIGIN` | `http://localhost:5173` | Origen permitido para requests desde el navegador (frontend Vite) |
+
 Usuarios del seed (contraseña `yura1234` para todos):
 
 | Rol | Email |
