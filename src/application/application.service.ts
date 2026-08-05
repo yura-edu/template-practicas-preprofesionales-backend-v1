@@ -31,7 +31,10 @@ export class ApplicationService {
     const applications = await this.prisma.application.findMany({ where: { offerId } })
     const rows = []
     for (const application of applications) {
-      const student = await this.prisma.user.findUnique({ where: { id: application.studentId } })
+      const student = await this.prisma.user.findUnique({
+        where: { id: application.studentId },
+        select: { id: true, email: true, fullName: true },
+      })
       rows.push({ ...application, student })
     }
     return rows
