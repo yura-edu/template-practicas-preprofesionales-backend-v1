@@ -1,8 +1,9 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Query, Req, UseGuards } from '@nestjs/common'
 import { Role } from '@prisma/client'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
 import { RolesGuard } from '../auth/guards/roles.guard'
+import { AccreditationService } from './accreditation.service'
 import { CreatePlacementDto } from './dto/create-placement.dto'
 import { UploadDocumentDto } from './dto/upload-document.dto'
 import { PlacementService } from './placement.service'
@@ -10,7 +11,18 @@ import { PlacementService } from './placement.service'
 @Controller('placements')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PlacementController {
-  constructor(private readonly service: PlacementService) {}
+  constructor(
+    private readonly service: PlacementService,
+    private readonly accreditationService: AccreditationService,
+  ) {}
+
+  // Nota de ruta: `accreditation` va antes que cualquier `:id` — si no,
+  // ParseIntPipe intenta convertir "accreditation" a número y devuelve 400.
+  @Get('accreditation')
+  @Roles(Role.COORDINATOR)
+  accreditation(@Query('period') period: string) {
+    return this.accreditationService.reportForPeriod(period)
+  }
 
   @Post()
   @Roles(Role.COORDINATOR)
