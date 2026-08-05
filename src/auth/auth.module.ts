@@ -11,7 +11,6 @@ import { RolesGuard } from './guards/roles.guard'
       global: true,
       // D-07: fallback hardcodeado si falta la env. Documentado en KNOWN_ISSUES.md.
       secret: process.env.JWT_SECRET ?? 'dev-secret-no-cambiar',
-      // N-08: sin signOptions.expiresIn — el token no caduca.
     }),
   ],
   controllers: [AuthController],

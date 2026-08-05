@@ -8,7 +8,7 @@
 
 ## Deuda técnica
 
-- [ ] Este PR **paga** deuda de `KNOWN_ISSUES.md` (indica cuál: D-0N / N-0N)
+- [ ] Este PR **paga** deuda de `KNOWN_ISSUES.md` (indica cuál, ver KNOWN_ISSUES.md)
 - [ ] Este PR **no toca** deuda existente
 - [ ] Este PR **introduce** deuda a propósito (justifícala)
 

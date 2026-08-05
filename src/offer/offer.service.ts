@@ -46,8 +46,7 @@ export class OfferService {
     return this.prisma.offer.update({ where: { id }, data: { status: OfferStatus.CLOSED } })
   }
 
-  // N-04: lectura suelta, sin transacción ni bloqueo de fila. El llamador
-  // compara contra seats fuera de cualquier sección crítica.
+  // Cuenta las postulaciones ya aceptadas para una oferta.
   acceptedCount(offerId: number): Promise<number> {
     return this.prisma.application.count({
       where: { offerId, status: ApplicationStatus.ACCEPTED },

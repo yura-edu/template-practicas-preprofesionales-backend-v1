@@ -16,7 +16,6 @@ export class AuthService {
     if (!user || !(await bcrypt.compare(password, user.password))) {
       throw new UnauthorizedException('credenciales inválidas')
     }
-    // N-08: firmado sin expiresIn — el token no caduca.
     const accessToken = await this.jwt.signAsync({ sub: user.id, email, role: user.role })
     return {
       accessToken,

@@ -37,8 +37,7 @@ export class ApplicationService {
     if (status === ApplicationStatus.ACCEPTED) {
       const offer = await this.prisma.offer.findUnique({ where: { id: application.offerId } })
       if (!offer) throw new NotFoundException('oferta no encontrada')
-      // N-04: read-then-write sin transacción ni bloqueo. Dos llamadas
-      // concurrentes leen el mismo conteo y ambas pasan la verificación.
+      // Verifica que la oferta todavía tenga cupos antes de aceptar la postulación.
       const accepted = await this.offers.acceptedCount(application.offerId)
       if (accepted >= offer.seats) throw new BadRequestException('la oferta ya no tiene cupos')
     }
