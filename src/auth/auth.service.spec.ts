@@ -28,6 +28,19 @@ describe('AuthService.login', () => {
     expect(result.user).toEqual({ id: 1, email: 'tutor0@miyura.com', fullName: 'Tutor Académico 0', role: 'TUTOR' })
   })
 
+  it('includes companyId for a COMPANY user', async () => {
+    prisma.user.findUnique.mockResolvedValue({
+      id: 2, email: 'empresa0@miyura.com', password: await bcrypt.hash('yura1234', 10),
+      fullName: 'Empresa 0', role: 'COMPANY', companyId: 1,
+    })
+
+    const result = await service.login('empresa0@miyura.com', 'yura1234')
+
+    expect(result.user).toEqual({
+      id: 2, email: 'empresa0@miyura.com', fullName: 'Empresa 0', role: 'COMPANY', companyId: 1,
+    })
+  })
+
   it('throws Unauthorized when the password does not match', async () => {
     prisma.user.findUnique.mockResolvedValue({
       id: 1, email: 'tutor0@miyura.com', password: await bcrypt.hash('otra', 10),

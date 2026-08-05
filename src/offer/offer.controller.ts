@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, ParseIntPipe, Patch, Post, Req, UseGuards } from '@nestjs/common'
 import { Role } from '@prisma/client'
 import { Roles } from '../auth/decorators/roles.decorator'
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard'
@@ -14,6 +14,14 @@ export class OfferController {
   @Get()
   findAll() {
     return this.service.findAll()
+  }
+
+  // Nota de ruta: 'me' va antes que ':id' — si no, ParseIntPipe intenta
+  // convertir "me" a número y devuelve 400 (mismo caso que /placements/accreditation).
+  @Get('me')
+  @Roles(Role.COMPANY)
+  findMine(@Req() req: { user: { sub: number } }) {
+    return this.service.findAllForCompanyUser(req.user.sub)
   }
 
   @Get(':id')

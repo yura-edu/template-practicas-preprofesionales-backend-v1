@@ -5,6 +5,7 @@ import { OfferService } from './offer.service'
 const prisma = {
   offer: { findUnique: vi.fn(), update: vi.fn(), create: vi.fn(), findMany: vi.fn() },
   application: { count: vi.fn() },
+  user: { findUnique: vi.fn() },
 }
 
 describe('OfferService', () => {
@@ -38,5 +39,26 @@ describe('OfferService', () => {
     expect(prisma.application.count).toHaveBeenCalledWith({
       where: { offerId: 1, status: 'ACCEPTED' },
     })
+  })
+
+  it('lists all offers of the company tied to the authenticated user, any status', async () => {
+    prisma.user.findUnique.mockResolvedValue({ companyId: 7 })
+    prisma.offer.findMany.mockResolvedValue([{ id: 1, companyId: 7, status: 'DRAFT' }])
+
+    const result = await service.findAllForCompanyUser(42)
+
+    expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: 42 }, select: { companyId: true } })
+    expect(prisma.offer.findMany).toHaveBeenCalledWith({
+      where: { companyId: 7 },
+      orderBy: { createdAt: 'desc' },
+      include: { company: true, applications: { select: { status: true } } },
+    })
+    expect(result).toEqual([{ id: 1, companyId: 7, status: 'DRAFT' }])
+  })
+
+  it('rejects listing offers for a user with no company', async () => {
+    prisma.user.findUnique.mockResolvedValue({ companyId: null })
+
+    await expect(service.findAllForCompanyUser(42)).rejects.toThrow('el usuario no tiene una empresa asociada')
   })
 })

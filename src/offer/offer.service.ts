@@ -25,6 +25,20 @@ export class OfferService {
     return offer
   }
 
+  // Ofertas de la empresa del usuario autenticado, en cualquier estado —
+  // a diferencia de findAll() (solo PUBLISHED, para el catálogo del estudiante).
+  // Incluye el estado de las postulaciones para que la empresa vea cupos
+  // ocupados sin que el front tenga que pedir una lista aparte por oferta.
+  async findAllForCompanyUser(userId: number) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { companyId: true } })
+    if (!user?.companyId) throw new NotFoundException('el usuario no tiene una empresa asociada')
+    return this.prisma.offer.findMany({
+      where: { companyId: user.companyId },
+      orderBy: { createdAt: 'desc' },
+      include: { company: true, applications: { select: { status: true } } },
+    })
+  }
+
   async publish(id: number) {
     const offer = await this.prisma.offer.findUnique({ where: { id } })
     if (!offer) throw new NotFoundException('oferta no encontrada')
