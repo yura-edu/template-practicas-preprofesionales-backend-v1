@@ -77,6 +77,8 @@ model User {
   tutorPlacements   Placement[]   @relation("TutorPlacements")
   evaluations       Evaluation[]
   reviewedHourLogs  HourLog[]     @relation("HourLogReviewer")
+  uploadedDocuments  Document[]   @relation("DocUploader")
+  validatedDocuments Document[]   @relation("DocValidator")
 
   @@map("users")
 }
@@ -229,7 +231,9 @@ model Document {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  placement Placement @relation(fields: [placementId], references: [id])
+  placement   Placement @relation(fields: [placementId], references: [id])
+  uploadedBy  User      @relation("DocUploader", fields: [uploadedById], references: [id])
+  validatedBy User?     @relation("DocValidator", fields: [validatedById], references: [id])
 
   @@index([updatedAt, id])
   @@map("documents")
