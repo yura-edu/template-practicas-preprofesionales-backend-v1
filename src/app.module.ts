@@ -7,6 +7,7 @@ import { HourLogModule } from './hour-log/hour-log.module'
 import { OfferModule } from './offer/offer.module'
 import { PlacementModule } from './placement/placement.module'
 import { PrismaModule } from './prisma/prisma.module'
+import { SyncModule } from './sync/sync.module'
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { PrismaModule } from './prisma/prisma.module'
     PlacementModule,
     HourLogModule,
     EvaluationModule,
+    SyncModule,
   ],
 })
 export class AppModule {}
