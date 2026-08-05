@@ -65,7 +65,12 @@ export class PlacementService {
     return this.prisma.placement.findFirst({
       where: { studentId, deletedAt: null },
       orderBy: { createdAt: 'desc' },
-      include: { company: true, tutor: true, documents: true },
+      include: {
+        company: true,
+        // `tutor: true` filtraría el hash de contraseña del tutor en la respuesta.
+        tutor: { select: { id: true, fullName: true, email: true } },
+        documents: true,
+      },
     })
   }
 
