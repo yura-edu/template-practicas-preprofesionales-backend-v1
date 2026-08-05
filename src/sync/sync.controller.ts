@@ -14,7 +14,7 @@ export class SyncController {
     @Query('since') since?: string,
     @Query('limit', new DefaultValuePipe(200), ParseIntPipe) limit = 200,
   ) {
-    return this.service.pull(req.user.sub, since, limit)
+    return this.service.pull(req.user.sub, since, Math.min(limit, 500))
   }
 
   @Post('push')

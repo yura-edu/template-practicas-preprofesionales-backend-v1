@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SyncService } from './sync.service'
 
 const prisma = {
-  placement: { findMany: vi.fn() },
+  placement: { findMany: vi.fn(), findUnique: vi.fn() },
   hourLog: { findMany: vi.fn(), create: vi.fn(), update: vi.fn(), findUnique: vi.fn() },
   document: { findMany: vi.fn() },
   evaluation: { findMany: vi.fn() },
@@ -33,6 +33,7 @@ describe('SyncService', () => {
   })
 
   it('applies a create operation and returns applied', async () => {
+    prisma.placement.findUnique.mockResolvedValue({ id: 1, studentId: 5 })
     prisma.hourLog.create.mockResolvedValue({ id: 77, version: 1 })
 
     const result = await service.push(5, [

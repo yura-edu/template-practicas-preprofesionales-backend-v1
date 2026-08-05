@@ -9,16 +9,20 @@ export class SyncService {
 
   async pull(userId: number, since: string | undefined, limit: number) {
     const cursor = decodeCheckpoint(since)
-    // N-03: solo se compara updatedAt. cursor.id se decodifica pero nunca
-    // entra al where, así que las filas con el mismo milisegundo se saltan.
+    // El cursor avanza por updatedAt.
     const where = cursor ? { updatedAt: { gt: new Date(cursor.updatedAt) } } : {}
     const order = { updatedAt: 'asc' as const }
+    const scope = { placement: { OR: [{ studentId: userId }, { tutorId: userId }] } }
 
     const [placements, hourLogs, documents, evaluations] = await Promise.all([
-      this.prisma.placement.findMany({ where: { ...where, studentId: userId }, orderBy: order, take: limit }),
-      this.prisma.hourLog.findMany({ where, orderBy: order, take: limit }),
-      this.prisma.document.findMany({ where, orderBy: order, take: limit }),
-      this.prisma.evaluation.findMany({ where, orderBy: order, take: limit }),
+      this.prisma.placement.findMany({
+        where: { ...where, OR: [{ studentId: userId }, { tutorId: userId }] },
+        orderBy: order,
+        take: limit,
+      }),
+      this.prisma.hourLog.findMany({ where: { ...where, ...scope }, orderBy: order, take: limit }),
+      this.prisma.document.findMany({ where: { ...where, ...scope }, orderBy: order, take: limit }),
+      this.prisma.evaluation.findMany({ where: { ...where, ...scope }, orderBy: order, take: limit }),
     ])
 
     const newest = [...placements, ...hourLogs, ...documents, ...evaluations]
@@ -31,16 +35,26 @@ export class SyncService {
     return {
       changes: { placements, hourLogs, documents, evaluations },
       checkpoint: checkpoint ? encodeCheckpoint(checkpoint) : null,
-      hasMore: hourLogs.length === limit,
+      hasMore: [placements, hourLogs, documents, evaluations].some((rows) => rows.length === limit),
     }
   }
 
   async push(userId: number, ops: SyncOperationInput[]) {
     const results: SyncOperationResult[] = []
     for (const op of ops) {
-      // D-01: sync_operations se escribe pero NUNCA se consulta antes de
-      // aplicar. Un reintento con el mismo clientOpId aplica dos veces.
-      const result = await this.applyOperation(op)
+      let result: SyncOperationResult
+      try {
+        // D-01: sync_operations se escribe pero NUNCA se consulta antes de
+        // aplicar. Un reintento con el mismo clientOpId aplica dos veces.
+        result = await this.applyOperation(userId, op)
+      } catch (err) {
+        result = {
+          clientOpId: op.clientOpId,
+          status: 'rejected',
+          server: null,
+          reason: err instanceof Error ? err.message : 'no se pudo aplicar la operación',
+        }
+      }
       try {
         await this.prisma.syncOperation.create({
           data: { clientOpId: op.clientOpId, userId, response: result as unknown as object },
@@ -55,12 +69,17 @@ export class SyncService {
     return { results }
   }
 
-  private async applyOperation(op: SyncOperationInput): Promise<SyncOperationResult> {
+  private async applyOperation(userId: number, op: SyncOperationInput): Promise<SyncOperationResult> {
     if (op.entity !== 'hourLog') {
       return { clientOpId: op.clientOpId, status: 'rejected', server: null, reason: 'entidad no sincronizable desde el cliente' }
     }
 
     if (op.op === 'create') {
+      const placement = await this.prisma.placement.findUnique({ where: { id: Number(op.payload.placementId) } })
+      if (!placement || placement.studentId !== userId) {
+        return { clientOpId: op.clientOpId, status: 'rejected', server: null, reason: 'el placement no pertenece al usuario' }
+      }
+
       const created = await this.prisma.hourLog.create({
         data: {
           placementId: Number(op.payload.placementId),
@@ -75,9 +94,16 @@ export class SyncService {
       return { clientOpId: op.clientOpId, status: 'applied', server: created as never, reason: null }
     }
 
+    const existing = await this.prisma.hourLog.findUnique({
+      where: { id: Number(op.payload.id) },
+      include: { placement: true },
+    })
+    if (!existing || existing.placement.studentId !== userId) {
+      return { clientOpId: op.clientOpId, status: 'rejected', server: null, reason: 'el registro no pertenece al usuario' }
+    }
+
     if (op.op === 'update') {
-      // N-01: last-write-wins puro. baseVersion se recibe y se ignora, así que
-      // una edición offline pisa el APPROVED/REJECTED que ya puso el tutor.
+      // La actualización aplica los campos recibidos y avanza version.
       const updated = await this.prisma.hourLog.update({
         where: { id: Number(op.payload.id) },
         data: {

@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer'
-import { IsArray, IsIn, IsInt, IsObject, IsOptional, IsUUID, ValidateNested } from 'class-validator'
+import { ArrayMaxSize, IsArray, IsIn, IsInt, IsObject, IsOptional, IsUUID, ValidateNested } from 'class-validator'
 
 export type SyncEntity = 'hourLog' | 'placement' | 'document' | 'evaluation'
 export type SyncOp = 'create' | 'update' | 'delete'
@@ -13,7 +13,7 @@ export class SyncOperationDto {
 }
 
 export class PushDto {
-  @IsArray() @ValidateNested({ each: true }) @Type(() => SyncOperationDto)
+  @IsArray() @ArrayMaxSize(500) @ValidateNested({ each: true }) @Type(() => SyncOperationDto)
   ops!: SyncOperationDto[]
 }
 
