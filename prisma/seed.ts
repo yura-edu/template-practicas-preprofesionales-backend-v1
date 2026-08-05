@@ -42,6 +42,18 @@ async function main() {
     }))
   }
 
+  for (let i = 0; i < COMPANIES; i++) {
+    await prisma.user.create({
+      data: {
+        email: `empresa${i}@miyura.com`,
+        password,
+        fullName: `Contacto Empresa ${i}`,
+        role: Role.COMPANY,
+        companyId: companies[i].id,
+      },
+    })
+  }
+
   const offers = []
   for (const company of companies) {
     for (let j = 0; j < OFFERS_PER_COMPANY; j++) {

@@ -40,6 +40,7 @@ Usuarios del seed (contraseña `yura1234` para todos):
 |---|---|
 | Coordinador | `coordinador@miyura.com` |
 | Tutor | `tutor0@miyura.com` … `tutor7@miyura.com` |
+| Empresa | `empresa0@miyura.com` … `empresa11@miyura.com` |
 | Estudiante | `estudiante0@miyura.com` … `estudiante199@miyura.com` |
 
 ## Architecture
