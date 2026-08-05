@@ -24,6 +24,12 @@ export class ApplicationController {
     return this.service.listByOffer(offerId)
   }
 
+  @Get('applications/me')
+  @Roles(Role.STUDENT)
+  findMine(@Req() req: { user: { sub: number } }) {
+    return this.service.listForStudent(req.user.sub)
+  }
+
   @Patch('applications/:id/decide')
   @Roles(Role.COMPANY, Role.COORDINATOR)
   decide(@Param('id', ParseIntPipe) id: number, @Body() dto: DecideApplicationDto) {

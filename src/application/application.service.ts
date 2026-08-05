@@ -16,6 +16,16 @@ export class ApplicationService {
     })
   }
 
+  // Postulaciones del propio estudiante, con la oferta y la empresa incluidas
+  // para que la pantalla no tenga que resolverlas con llamadas aparte.
+  listForStudent(studentId: number) {
+    return this.prisma.application.findMany({
+      where: { studentId },
+      orderBy: { submittedAt: 'desc' },
+      include: { offer: { include: { company: true } } },
+    })
+  }
+
   // D-04: N+1. Una consulta por la lista y otra por cada estudiante.
   async listByOffer(offerId: number) {
     const applications = await this.prisma.application.findMany({ where: { offerId } })
