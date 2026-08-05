@@ -111,4 +111,9 @@ async function main() {
   console.log(`seed listo — coordinador: ${coordinator.email} / yura1234`)
 }
 
-main().finally(() => prisma.$disconnect())
+main()
+  .catch((e) => {
+    console.error(e)
+    process.exit(1)
+  })
+  .finally(() => prisma.$disconnect())
