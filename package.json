@@ -33,7 +33,7 @@
     "@nestjs/cli": "^11.0.0",
     "@nestjs/testing": "^11.0.0",
     "@types/bcryptjs": "^2.4.6",
-    "@types/node": "^22.10.0",
+    "@types/node": "^24.0.0",
     "@vitest/coverage-v8": "^2.1.8",
     "eslint": "^9.17.0",
     "jscpd": "^4.0.5",
@@ -44,5 +44,8 @@
     "unplugin-swc": "^1.5.1",
     "vitest": "^2.1.8"
   },
-  "packageManager": "pnpm@9.15.0"
+  "packageManager": "pnpm@11.21.0",
+  "engines": {
+    "node": ">=24"
+  }
 }
